@@ -372,8 +372,8 @@ int main(void)
        
         printf("Test Function Start ...\n");
         
-        printf("clk_name[0] = %s.\n", clk_name[0]);
-        printf("clk_name[1] = %s.\n", clk_name[1]);
+//      printf("clk_name[0] = %s.\n", clk_name[0]);
+//      printf("clk_name[1] = %s.\n", clk_name[1]);
 
 //      t = get_cycle_count();
         
