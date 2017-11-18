@@ -1,0 +1,40 @@
+video_dev_idx = 0
+
+# test whitespace prior and behind equal sign
+bayer=0
+fps =0
+bayer= 1
+fps = 30
+
+ #test whitespace in the beginning of line
+ op_mode=0
+ hdr_mode =0
+ op_mode= 1
+ hdr_mode = 3
+ 
+video_chn_idx = 0
+# test whitespace at the end of line 
+mirror=0 
+flip =0  
+mirror= 1  
+flip = 1 
+  
+ #test whitespace in the beginning and at the end of line 
+  gop=0
+  qp =0
+  gop= 30
+  qp = 24
+    
+
+video_chn_idx = 1
+# test inline comment
+mirror=0   #mirror=0
+flip =0  # flip =0
+mirror= 1  #mirror= 1
+flip = 1 #flip = 1
+
+ #test multiple parameters 
+  gop=60 qp =30
+gop= 120  qp = 16
+
+   

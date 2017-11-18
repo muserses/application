@@ -353,15 +353,386 @@ signed int longer(char *a, char *b)
 }
 
 
+#define DEV_NUM            (1)
+#define CHN_NUM            (4)
+
+#define INVALID_DEV_IDX    (-1)
+#define MIN_DEV_IDX        (0)
+#define MAX_DEV_IDX        (DEV_NUM - 1)
+#define INVALID_CHN_IDX    (-1)
+#define MIN_CHN_IDX        (0)
+#define MAX_CHN_IDX        (CHN_NUM - 1)
+
+
+typedef enum {
+        TYPE_BOOL,
+        TYPE_CHAR,
+        TYPE_INT8,
+        TYPE_UINT8,
+        TYPE_INT16,
+        TYPE_UINT16,
+        TYPE_INT32,
+        TYPE_UINT32,
+        TYPE_STR,
+        TYPE_NUM,
+} types;
+
+
+typedef struct {
+        int16_t  bayer;
+        int16_t  fps;
+} path_param;
+
+typedef struct {
+        int32_t  op_mode;
+        int32_t  hdr_mode;
+} dgen_param;
+
+typedef struct {
+        path_param  path;
+        dgen_param  gen;
+} dev_param;
+
+typedef struct {
+        uint8_t  mirror;
+        uint8_t  flip;
+} cgen_param;
+
+typedef struct {
+        int32_t  gop;
+        int32_t  qp;
+} enc_param;
+
+typedef struct {
+        cgen_param  gen;
+        enc_param   enc;
+} chn_param;
+
+
+typedef struct {
+        dev_param  dev[DEV_NUM];
+        chn_param  chn[CHN_NUM];
+} sample_conf;
+
+
+sample_conf g_conf;
+
+
+void get_value(void *dest, types type)
+{
+        char *val = strtok(NULL, " =");
+	
+//      printf("val = |%s|.\n", val);
+
+        switch (type) {
+        case TYPE_BOOL:
+        //      *(bool *)dest = (bool)atoi(val);
+                break;
+
+        case TYPE_INT8:
+                *(int8_t *)dest = (int8_t)atoi(val);
+                break;
+
+        case TYPE_UINT8:
+                *(uint8_t *)dest = (uint8_t)atoi(val);
+                break;
+
+        case TYPE_INT16:
+                *(int16_t *)dest = (int16_t)atoi(val);
+                break;
+
+        case TYPE_UINT16:
+                *(uint16_t *)dest = (uint16_t)atoi(val);
+                break;
+
+        case TYPE_INT32:
+                *(int32_t *)dest = (int32_t)atoi(val);
+                break;
+
+        case TYPE_UINT32:
+                *(uint32_t *)dest = (uint32_t)atoi(val);
+                break;
+
+        case TYPE_STR:
+        //      *(char *)dest = (char *)atoi(val);
+                break;
+
+        default:
+                break;
+        }
+
+        return;
+}
+
+int parse_dev_path_param(char *tok, path_param *p)
+{
+        int hit = 1;
+
+//      printf("tok = |%s|.\n", tok);
+
+        if (!strcmp(tok, "bayer")) {
+                get_value((void *)&p->bayer, TYPE_INT16);
+        } else if (!strcmp(tok, "fps")) {
+                get_value((void *)&p->fps, TYPE_INT16);
+        } else {
+                hit = 0;
+        }
+
+	return hit;
+}
+
+int parse_dev_gen_param(char *tok, dgen_param *p)
+{
+        int hit = 1;
+
+//      printf("tok = |%s|.\n", tok);
+
+        if (!strcmp(tok, "op_mode")) {
+                get_value((void *)&p->op_mode, TYPE_INT32);
+        } else if (!strcmp(tok, "hdr_mode")) {
+                get_value((void *)&p->hdr_mode, TYPE_INT32);
+        } else {
+                hit = 0;
+        }
+
+	return hit;
+}
+
+int parse_chn_gen_param(char *tok, cgen_param *p)
+{
+        int hit = 1;
+
+//      printf("tok = |%s|.\n", tok);
+
+        if (!strcmp(tok, "mirror")) {
+                get_value((void *)&p->mirror, TYPE_UINT8);
+        } else if (!strcmp(tok, "flip")) {
+                get_value((void *)&p->flip, TYPE_UINT8);
+        } else {
+                hit = 0;
+        }
+
+	return hit;
+}
+
+int parse_chn_enc_param(char *tok, enc_param *p)
+{
+        int hit = 1;
+
+//      printf("tok = |%s|.\n", tok);
+
+        if (!strcmp(tok, "gop")) {
+                get_value((void *)&p->gop, TYPE_INT32);
+        } else if (!strcmp(tok, "qp")) {
+                get_value((void *)&p->qp, TYPE_INT32);
+        } else {
+                hit = 0;
+        }
+
+	return hit;
+}
+
+int parse_dev_param(char *tok)
+{
+        static int32_t idx = INVALID_DEV_IDX;
+
+        int hit = 0;
+
+//      printf("tok = |%s|.\n", tok);
+
+        if (!strcmp(tok, "video_dev_idx")) {
+                get_value((void *)&idx, TYPE_INT32);
+
+                hit = 1;
+
+                goto end;
+        }
+
+        /* Parae other device parameter for valid channel index */
+        if (idx >= MIN_DEV_IDX && idx <= MAX_DEV_IDX) {
+                dev_param *p = &g_conf.dev[idx];
+
+                /* Parse path parameter */
+                hit = parse_dev_path_param(tok, &p->path); if (hit) { goto end; }
+        
+                /* Parse general parameter */
+                hit = parse_dev_gen_param(tok, &p->gen); if (hit) { goto end; }
+        }
+
+end:
+        return hit;
+}
+
+int parse_chn_param(char *tok)
+{
+        static int32_t idx = INVALID_CHN_IDX;
+
+        int hit = 0;
+
+//      printf("tok = |%s|.\n", tok);
+
+        if (!strcmp(tok, "video_chn_idx")) {
+                get_value((void *)&idx, TYPE_INT32);
+
+                hit = 1;
+
+                goto end;
+        }
+
+        /* Parae other channel parameter for valid channel index */
+        if (idx >= MIN_CHN_IDX && idx <= MAX_CHN_IDX) {
+                chn_param *p = &g_conf.chn[idx];
+
+                /* Parse general parameter */
+                hit = parse_chn_gen_param(tok, &p->gen); if (hit) { goto end; }
+        
+                /* Parse encoder parameter */
+                hit = parse_chn_enc_param(tok, &p->enc); if (hit) { goto end; }
+        }
+
+end:
+        return hit;
+}
+
+int parse_param(char *str)
+{
+        int   hit = 0;
+	char *tok = strtok(str, " =");
+
+        while (tok != NULL) {
+                hit = 0;
+
+        //      printf("tok = |%s|.\n", tok);
+
+                /* Stop parsing this line when comment sign found */
+                if (!strncmp(tok, "#", strlen("#"))) {
+                        hit = 1;
+                        break;
+                }
+
+                /* Parse device parameter */
+                hit = parse_dev_param(tok); if (hit) { goto next; }
+
+                /* Parse channel parameter */
+                hit = parse_chn_param(tok); if (hit) { goto next; }
+
+                if (!hit) {
+                        /* Bypass error for newline sign */
+                        if (!strcmp(tok, "\n")) {
+                                hit = 1;
+                        } else {
+                                /* Stop parsing when unknown parameter found */
+                                printf("Unknown parameter: %s\n", tok);
+                                break;
+                        }
+                }
+
+next:
+                /* Parse other parameters in same line */
+                tok = strtok(NULL, " =");
+        }
+
+	return hit;
+}
+
+int parse_config_file(char *filename)
+{
+        int  ret = 0;
+        char str[256];
+	FILE *fp;
+
+        /* Open config file for parsing */
+	fp = fopen(filename, "r");
+        if (fp == NULL) {
+		printf("Error opening file.\n");
+                return -1;
+	}
+
+        /* Parse config file line by line */
+	while (fgets(str, sizeof(str), fp) != NULL) {
+		ret = parse_param(str);
+
+                /* Stop parsing when a unknown parameter found */
+                if (!ret) {
+                        printf("Parsing parameter file failed.\n");
+                        break;
+                }
+	}
+
+        fclose(fp);
+
+        return ret;
+}
+
+int parse(int argc, char *argv[])
+{
+	int c;
+
+//	printf("Init optind = %d\n", optind);
+
+	while((c = getopt(argc, argv, "d:p:")) != -1) {
+		switch(c) {
+		case 'd':
+                        /* Parse parameter from config file */
+                        parse_config_file(optarg);
+		//	printf("argv = %s, optind = %d\n", optarg, optind);
+			break;
+
+	        case 'p':
+                        /* Parse parameter from command line */
+                        parse_param(optarg);
+		//	printf("argv = %s, optind = %d\n", optarg, optind);
+			break;
+
+	        case ':':
+			printf("oops\n");
+			break;
+
+	        case '?':
+		default:
+			printf("wrong command\n");
+			break;
+		}
+	}
+
+	return 0;
+}
+
+void show_result(void)
+{
+        int i;
+
+        for(i = 0; i < DEV_NUM; ++i) {
+                dev_param *p = &g_conf.dev[i];
+
+                printf("Video device %d:\n", i);
+                printf("Path: bayer = %d, fps = %d.\n",
+                       p->path.bayer, p->path.fps);
+                printf("General: op_mode = %d, hdr_mode = %d.\n",
+                       p->gen.op_mode, p->gen.hdr_mode);
+                printf("\n");
+        }
+
+        for(i = 0; i < CHN_NUM; ++i) {
+                chn_param *p = &g_conf.chn[i];
+
+                printf("Video channel %d:\n", i);
+                printf("General: mirror = %d, flip = %d.\n",
+                       p->gen.mirror, p->gen.flip);
+                printf("Encoder: gop = %d, qp = %d.\n",
+                       p->enc.gop, p->enc.qp);
+                printf("\n");
+        }
+}
+
 #if 1
 /**
  * void main(void)
  * main entry function
  */
-int main(void)
+int main(int argc, char *argv[])
 {
-        uint32_t overhead = 0, t = 0;
-        char *clk_name[2] = { "lvds-clock", "sub-lvds-clock", };
+//      uint32_t overhead = 0, t = 0;
 
         /** init performance counter */
 //      init_perf_counter(1); 
@@ -369,12 +740,13 @@ int main(void)
         /** measure the counting overhead */
 //      overhead = get_cycle_count();
 //      overhead = get_cycle_count() - overhead;    
-       
+
+        parse(argc, argv);
+
+        show_result();
+
         printf("Test Function Start ...\n");
         
-        printf("clk_name[0] = %s.\n", clk_name[0]);
-        printf("clk_name[1] = %s.\n", clk_name[1]);
-
 //      t = get_cycle_count();
         
         /** do some stuff here ... */
@@ -386,14 +758,13 @@ int main(void)
 //	t = mult(4294967295,1);
 //      t = longer("wifi", "teeeeee");
 
-	printf("t = %u\n", t);
 
 //      t = get_cycle_count() - t;
         
         printf("Test Function End.\n");
 
-        printf("the overhead to get cycle count is %d.\n", overhead);
-        printf("function took exactly %d cycles (including function call)\n", t - overhead);
+//      printf("the overhead to get cycle count is %d.\n", overhead);
+//      printf("function took exactly %d cycles (including function call)\n", t - overhead);
 
         return 0;
 }
