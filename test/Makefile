@@ -3,7 +3,15 @@
 # muserses, 2017-01-14 18:01
 #
 
-.PHONY: all clean
+#HC_MACH ?=
+MK := ./chip.mk
+MKPATH := ./mkfile
+
+
+-include $(MK)
+
+
+.PHONY: all prepare clean
 
 #ARCH = arm
 #CROSS_COMPILE = 
@@ -19,7 +27,21 @@ LIBS=
 DEFS=-DCHIPID=MT6258
 
 
-all: $(BIN)
+all: prepare $(BIN)
+
+prepare:
+	@if [ ! -f "chip.mk" ]; then \
+		echo "mk does not exist!" && exit 1; \
+	fi
+
+%.mk:
+	@echo "make file = $@"
+	@if [ ! -f $(MKPATH)/$@ ]; then \
+		echo "Make file $@ does not exist!" && exit 1; \
+	else \
+		echo "Create mk"; \
+		cp $(MKPATH)/$@ $(MK); \
+	fi
 
 $(BIN): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS)
