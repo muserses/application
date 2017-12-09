@@ -8,7 +8,9 @@ MK := ./chip.mk
 MKPATH := ./mkfile
 
 
+ifneq ($(MAKECMDGOALS), clean)
 -include $(MK)
+endif
 
 
 .PHONY: all prepare clean
@@ -30,14 +32,13 @@ DEFS=-DCHIPID=MT6258
 all: prepare $(BIN)
 
 prepare:
-	@if [ ! -f "chip.mk" ]; then \
-		echo "mk does not exist!" && exit 1; \
+	@if [ ! -f $(MK) ]; then \
+		echo "Make parameter file does not exist!" && exit 1; \
 	fi
 
 %.mk:
-	@echo "make file = $@"
 	@if [ ! -f $(MKPATH)/$@ ]; then \
-		echo "Make file $@ does not exist!" && exit 1; \
+		echo "Make parameter file $@ does not exist!" && exit 1; \
 	else \
 		echo "Create mk"; \
 		cp $(MKPATH)/$@ $(MK); \
