@@ -12,10 +12,10 @@
 
 #if (CHIPID == MT6256)
 #define CHIP MT6256
-//#error "MT6256"
+#error "MT6256"
 #elif (CHIPID == MT6258)
 #define CHIP MT6258
-//#error "MT6258"
+#error "MT6258"
 #else
 #error "NO chip"
 #endif

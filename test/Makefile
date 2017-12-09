@@ -3,8 +3,7 @@
 # muserses, 2017-01-14 18:01
 #
 
-#HC_MACH ?=
-MK := ./chip.mk
+MK := chip.mk
 MKPATH := ./mkfile
 
 
@@ -26,22 +25,25 @@ OBJS=test.o
 INC=
 LIBS=
 
-DEFS=-DCHIPID=MT6258
+DEFS=-DCHIPID=$(CHIP)
 
 
 all: prepare $(BIN)
 
 prepare:
 	@if [ ! -f $(MK) ]; then \
-		echo "Make parameter file does not exist!" && exit 1; \
+		echo "chip.mk file does not exist!" && exit 1; \
 	fi
 
 %.mk:
-	@if [ ! -f $(MKPATH)/$@ ]; then \
-		echo "Make parameter file $@ does not exist!" && exit 1; \
-	else \
-		echo "Create mk"; \
-		cp $(MKPATH)/$@ $(MK); \
+	@echo "Make file = $@"
+	@if [ $@ != $(MK) ]; then \
+		if [ ! -f $(MKPATH)/$@ ]; then \
+			echo "Make parameter file $@ does not exist!" && exit 1; \
+		else \
+			echo "Create make parameter file!"; \
+			cp $(MKPATH)/$@ $(MK); \
+		fi \
 	fi
 
 $(BIN): $(OBJS)
@@ -51,8 +53,8 @@ $(BIN): $(OBJS)
 	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
 
 clean:
+	rm -f $(MK)
 	rm -f *.o $(BIN)
-
 
 # vim:ft=make
 #
