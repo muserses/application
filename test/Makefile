@@ -12,17 +12,20 @@ ifneq ("$(wildcard $(MK))", "")
 HC_MACH := $(shell cat $(MK))
 endif
 else
-$(shell rm -f $(MK))
+#$(shell rm -f $(MK))
+$(shell echo $(HC_MACH) > $(MK))
 endif
 
-ifneq ($(HC_MACH), )
 ifneq ($(MAKECMDGOALS), clean)
+ifeq ($(HC_MACH), )
+$(info Please type full command for the first build.)
+$(info For example, make HC_MACH=mt6256 all)
+endif
 include $(MKPATH)/$(HC_MACH).mk
 endif
-endif
 
 
-.PHONY: all prepare clean
+.PHONY: all clean
 
 #ARCH = arm
 #CROSS_COMPILE = 
@@ -38,33 +41,8 @@ LIBS=
 DEFS=-DCHIPID=$(CHIP)
 
 
-all: prepare $(BIN)
+all: $(BIN)
 
-prepare:
-	@if [ "$(HC_MACH)" = "" ]; then \
-		echo "HC_MACH has not been specified ever!"; \
-		echo "Please type full command for the first build, for example:"; \
-		echo "make HC_MACH=mt6256 all"; \
-		echo ""; \
-		exit 1; \
-	else \
-		echo $(HC_MACH) > $(MK); \
-	fi
-
-#	@if [ ! -f $(MK) ]; then \
-#		echo "chip.mk file does not exist!" && exit 1; \
-#	fi
-
-#%.mk:
-#	@echo "Make file = $@"
-#	@if [ $@ != $(MK) ]; then \
-#		if [ ! -f $(MKPATH)/$@ ]; then \
-#			echo "Make parameter file $@ does not exist!" && exit 1; \
-#		else \
-#			echo "Create make parameter file!"; \
-#			cp $(MKPATH)/$@ $(MK); \
-#		fi \
-#	fi
 
 $(BIN): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS)
