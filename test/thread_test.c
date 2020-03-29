@@ -727,63 +727,47 @@ void show_result(void)
         }
 }
 
-int** test_permutation(void)
+
+typedef struct {
+	int32_t   var;
+} tinfo;
+
+tinfo g_info;
+int32_t stop_thread = 0;
+
+
+
+
+void sig_handler(int signo)
 {
-	int nums[3] = {1, 2, 3};
-	int numsSize = 3;
-	int returnSize = 1;
-	int *dest, *src;
-
-	int level, row, col, offs, num;
-	int i = 0;
-	int **p;
-
-	dest = (int*)malloc(numsSize * sizeof(int));
-
-	for (i = numsSize; i > 0; i--) {
-		returnSize *= i;
-		*(dest + i - 1) = *(nums + i - 1);
-		printf("%d, ", *(dest + i - 1));
-	}
-	printf("\n");
-	
-	p = (int**)malloc(returnSize * sizeof(int*));
-
-	*p = dest;
-
-	num  = 1;
-	offs = returnSize;
-
-	for (level = numsSize; level > 1; level--) {
-		num  *= level; printf("num =%d\n", num);
-		offs /= level; printf("offs=%d\n", offs);
-		src = *p;
-
-		for (row = 0; row < num; row++) {
-			if (row % level) {
-				src = dest;
-				*(p + offs * row) = (int*)malloc(numsSize * sizeof(int));
-				dest = *(p + offs * row); printf("dest=%d, ", offs * row);
-
-				for (col = 0; col < numsSize; col++) {
-					if (col < numsSize - level) {
-						*(dest + col) = *(src + col);
-					} else if (col == numsSize - 1) {
-						*(dest + col) = *(src + numsSize - level);
-					} else {
-						*(dest + col) = *(src + (col + 1) % numsSize);
-					}
-					printf("%d, ", *(dest + col));
-				}
-			} else {
-				dest = *(p + offs * row); printf("dest=%d, ", offs * row);
-			}
-
-			printf("\n");
-		}
+	if (signo == SIGINT) {
+		stop_thread = 1;
+		printf("Receive SIGINT.\n");
+	} else if (signo == SIGTERM) {
+		printf("Receive SIGTERM.\n");
+	} else {
+		printf("Unknown signal.\n");
+		exit(0);
 	}
 
-	return p;
+//	exit(1);
+}
+
+void* thread_func(void *arg)
+{
+	tinfo *t = arg;
+
+	printf("Enter thread var=%d\n", t->var);
+
+	while (!stop_thread) {
+		t->var++;
+
+		sleep(1);
+
+		printf("In while loop var=%d\n", t->var);
+	};
+
+	return NULL;
 }
 
 
@@ -794,22 +778,36 @@ int** test_permutation(void)
  */
 int main(int argc, char *argv[])
 {
+	pthread_t tid;
+	sigset_t set;
 //      uint32_t overhead = 0, t = 0;
 
         /** init performance counter */
 //      init_perf_counter(1); 
+
+	if (signal(SIGINT, sig_handler) == SIG_ERR) {
+		printf("Register signal handler failed\n");
+	}
 
         /** measure the counting overhead */
 //      overhead = get_cycle_count();
 //      overhead = get_cycle_count() - overhead;    
 
 //	parse(argc, argv);
+
 //	show_result();
 
+	sigemptyset(&set);
+	sigaddset(&set, SIGINT);
+	if (pthread_sigmask(SIG_BLOCK, &set, NULL) != 0) {
+        	printf("Set signal mask failed.\n");
+	}
+
         printf("Test Function Start ...\n");
+        
 //      t = get_cycle_count();
         
-        /* do some stuff here ... */
+        /** do some stuff here ... */
 //      test_program();
 //      test_zigzag();
 //	test_trapping_water();
@@ -818,9 +816,27 @@ int main(int argc, char *argv[])
 //	t = mult(4294967295,1);
 //      t = longer("wifi", "teeeeee");
 
-	test_permutation();
+	g_info.var = 0;
+
+	if (pthread_create(&tid, NULL, &thread_func, (void *)&g_info) != 0) {
+		printf("Failed to create thread.\n");
+		goto err;
+	}
+
+	if (pthread_sigmask(SIG_UNBLOCK, &set, NULL) != 0) {
+        	printf("Set signal mask failed.\n");
+	}
+
+        printf("Main thread is going to sleep.\n");
+
+	sleep(100);
+
+	printf("Main thread wake up.\n");
+
+	pthread_join(tid, NULL);
 
 //      t = get_cycle_count() - t;
+err:
         printf("Test Function End.\n");
 
 //      printf("the overhead to get cycle count is %d.\n", overhead);

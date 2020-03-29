@@ -36,7 +36,7 @@ CFLAGS=-Wall -fopenmp -g
 BIN=test
 OBJS=test.o
 INC=
-LIBS=
+LIBS=-lpthread
 
 DEFS=-DCHIPID=$(CHIP)
 
@@ -45,7 +45,7 @@ all: $(BIN)
 
 
 $(BIN): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
